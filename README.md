@@ -1,6 +1,6 @@
 # Music & Studying: STA304 Survey Explorer
 
-**Live app:** [PASTE-YOUR-POSIT-CONNECT-CLOUD-URL-HERE](https://saadhussain-affectsofmusiconacademics.share.connect.posit.cloud/)
+**Live app:** [CONNECT-CLOUD-URL-HERE](https://saadhussain-affectsofmusiconacademics.share.connect.posit.cloud/)
 
 An interactive R Shiny website presenting our STA304 (Fall 2026, UTM) group
 project, *The Impact of Music on Performance During Intellectually Demanding
