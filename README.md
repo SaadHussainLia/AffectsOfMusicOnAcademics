@@ -37,4 +37,4 @@ Then open `app.R` in RStudio and click **Run App**.
 
 ## Team
 
-Saad Hussain, Calvin, Khalid Abdullayev, Lu Hoang-Nguyen, Ashritha Tangella, Divjot Sidhar
+Saad Hussain, Calvin, Khalid Abdullayev, Hoang-Nguyen Nguyen, Ashritha Tangella, Divjot Sidhar
