@@ -208,12 +208,6 @@ fmt   <- function(x, d = 2) formatC(x, format = "f", digits = d)
 pct   <- function(x) paste0(round(100 * x), "%")
 pct1  <- function(x) paste0(formatC(100 * x, format = "f", digits = 1), "%")
 
-p_value_note <- p(class = "small text-muted",
-  "What is a p-value? It is the chance of seeing a difference (or slope) at",
-  "least this large if there were really no difference at all. Below 0.05,",
-  "chance alone is an unlikely explanation, so we call the result",
-  "statistically significant.")
-
 # Overall results for the "Start here" tab, using all 79 students
 full_means <- tapply(survey$sta256_perf, survey$music_sta256, mean)
 full_aov   <- summary(aov(sta256_perf ~ music_sta256, data = survey))[[1]]
