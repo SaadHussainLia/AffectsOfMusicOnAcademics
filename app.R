@@ -396,7 +396,7 @@ ui <- page_navbar(
              "Spread (SD) is the standard deviation: roughly how far a typical",
              "student is from the group average.")),
       card(card_header("What does this tell us?"),
-           uiOutput("rq3_text"), p_value_note)
+           uiOutput("rq3_text"))
     )
   ),
 
@@ -431,8 +431,7 @@ ui <- page_navbar(
         )
       )
     ),
-    card(card_header("What does this tell us?"), uiOutput("rq4_text"),
-         p_value_note)
+    card(card_header("What does this tell us?"), uiOutput("rq4_text"))
   ),
 
   # ---- Tab 4: explore any question ----
@@ -500,27 +499,15 @@ ui <- page_navbar(
       card(
         card_header("Things to keep in mind"),
         tags$ul(
-          tags$li(strong("Not a truly random sample. "),
-                  "Only students we reached, and who chose to answer, are",
-                  "included, so they may not represent all STA304 students."),
-          tags$li(strong("Self-reported answers. "),
-                  "Grades and study habits are what students remember, not",
-                  "official records."),
-          tags$li(strong("Observational, not an experiment. "),
-                  "We did not assign anyone to study with music, so results",
-                  "show associations, not cause and effect."),
-          tags$li(strong("Small subgroups. "),
-                  "Filters can leave very few students. Results based on a",
-                  "handful of students are unreliable, and checking many",
-                  "subgroups makes a 'significant' result by luck more likely."),
           tags$li(strong("No demographic questions. "),
                   "We did not ask about age, gender or program, so we cannot",
                   "break results down that way."),
           tags$li(strong("Test assumptions. "),
                   "Performance is recorded in whole levels, so the residuals",
                   "are not normally distributed. As permitted in this course we",
-                  "still report the ANOVA and regression, and rank-based checks",
-                  "(Kruskal-Wallis and Spearman) are shown alongside them.")
+                  "still report the ANOVA and regression. Rank-based checks in",
+                  "our EDA report (Kruskal-Wallis and Spearman) reached the same",
+                  "conclusions.")
         )
       )
     ),
@@ -698,17 +685,15 @@ server <- function(input, output, session) {
     if (any(sizes < 3)) {
       return(list(ok = FALSE, msg = "At least one group has fewer than 3 students with these filters, which is too few for a test. Try widening the filters."))
     }
-    kw <- kruskal.test(y ~ music_sta256, data = d)$p.value
     if (length(sizes) == 2) {
       tt <- t.test(y ~ music_sta256, data = d)
-      list(ok = TRUE, type = "t", p = tt$p.value, kw = kw,
+      list(ok = TRUE, type = "t", p = tt$p.value,
            stat = sprintf("t(%s) = %s", fmt(tt$parameter, 1), fmt(tt$statistic)))
     } else {
       fit <- aov(y ~ music_sta256, data = d)
       tab <- summary(fit)[[1]]
-      eta <- tab[["Sum Sq"]][1] / sum(tab[["Sum Sq"]])
       pw  <- pairwise.t.test(d$y, d$music_sta256, p.adjust.method = "bonferroni")
-      list(ok = TRUE, type = "aov", p = tab[["Pr(>F)"]][1], kw = kw, eta = eta,
+      list(ok = TRUE, type = "aov", p = tab[["Pr(>F)"]][1],
            pairwise = pw$p.value,
            stat = sprintf("F(%d, %d) = %s", tab$Df[1], tab$Df[2],
                           fmt(tab[["F value"]][1])))
@@ -748,43 +733,18 @@ server <- function(input, output, session) {
                 " than chance alone would explain. Result: ",
                 strong(paste0(res$stat, ", ", fmt_p(res$p)), .noWS = "after"), ".")
 
-    if (res$p >= 0.05) {
-      verdict <- p("Because p is above 0.05, the differences between the groups",
-                   "are small enough that they could easily come from which",
-                   "students happened to answer our survey. We do not have",
-                   "evidence that the groups really differ.",
-                   if (res$type == "aov") "Because the overall test found no difference, we don't go on to compare pairs of groups.")
-    } else {
-      verdict <- p("Because p is below 0.05, the differences are larger than we",
-                   "would expect by chance, so there is evidence that the groups",
-                   "differ on average. This is an observational survey, so this",
-                   "is a pattern (an association), not proof that music causes",
-                   "the difference.")
-      if (res$type == "aov") {
-        pw <- res$pairwise
-        pairs <- character(0)
-        for (i in rownames(pw)) for (j in colnames(pw)) {
-          if (!is.na(pw[i, j])) pairs <- c(pairs, sprintf("%s vs. %s: %s", i, j, fmt_p(pw[i, j])))
-        }
-        verdict <- tagList(verdict,
-          p("To see which groups differ, we compared each pair with a",
-            "Bonferroni correction (which accounts for making several",
-            "comparisons):", paste(pairs, collapse = "; "), "."))
+    # Pairwise comparisons only after a significant ANOVA (TA's EDA feedback)
+    pairwise <- NULL
+    if (res$type == "aov" && res$p < 0.05) {
+      pw <- res$pairwise
+      pairs <- character(0)
+      for (i in rownames(pw)) for (j in colnames(pw)) {
+        if (!is.na(pw[i, j])) pairs <- c(pairs, sprintf("%s vs. %s: %s", i, j, fmt_p(pw[i, j])))
       }
+      pairwise <- p(paste0("Pairwise comparisons (Bonferroni-corrected): ",
+                           paste(pairs, collapse = "; "), "."))
     }
-
-    extras <- tagList(
-      if (res$type == "aov") p(sprintf(
-        "Size of the effect: music group accounts for about %s of the differences in %s between students.",
-        pct(res$eta), lab)),
-      p(class = "small", sprintf(
-        "Check that doesn't assume normally distributed residuals (Kruskal-Wallis): %s.",
-        fmt_p(res$kw))),
-      if (nrow(d) < n_total) p(class = "small text-muted",
-        "You are looking at a subgroup. The more subgroups you test, the more",
-        "likely one will look 'significant' by luck alone.")
-    )
-    tagList(describe, result, verdict, extras)
+    tagList(describe, result, pairwise)
   })
 
   # ===========================================================================
@@ -861,8 +821,6 @@ server <- function(input, output, session) {
     fit <- summary(lm(sta256_perf ~ x, data = d))
     co  <- coef(fit)["x", ]
     change <- co[["Estimate"]] * x_step[[xvar]]
-    sp  <- suppressWarnings(cor.test(d$x, d$sta256_perf, method = "spearman",
-                                     exact = FALSE))
     direction <- if (change >= 0) "higher" else "lower"
 
     tagList(
@@ -886,9 +844,6 @@ server <- function(input, output, session) {
           "an observational survey, so this is an association: it does not show",
           "that", sentence_labels[[xvar]], "causes higher or lower performance.")
       },
-      p(class = "small", sprintf(
-        "Check that doesn't assume normally distributed residuals (Spearman rank correlation): rho = %s, %s.",
-        fmt(sp$estimate), fmt_p(sp$p.value))),
       if (xvar %in% ordinal_vars) p(class = "small text-muted",
         "This question has ranked answer categories, so a straight line is only",
         "a rough summary of the pattern.")
