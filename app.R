@@ -514,7 +514,7 @@ ui <- page_navbar(
     card(
       card_header("Who made this"),
       p("STA304 group project, Fall 2026: Saad Hussain, Calvin, Khalid",
-        "Abdullayev, Lu Hoang-Nguyen, Ashritha Tangella and Divjot Sidhar."),
+        "Abdullayev, Hoang-Nguyen Nguyen, Ashritha Tangella and Divjot Sidhar."),
       p(class = "small text-muted",
         "Built with R Shiny. The code and data are in our GitHub repository.")
     )
